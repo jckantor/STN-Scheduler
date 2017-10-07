@@ -2,16 +2,20 @@
 
 The State-Task Network (STN) is a method for modeling and scheduling multipurpose batch processes that was proposed by Kondili, et al., in 1993, and further developed and extended by others. 
 
-This repository consists of a python module STN for the modeling and scheduling of State Task Networks, and several Jupyter notebooks demonstrating their use. This module implements the STN model using the Pyomo package for building optimization models in Python, and requires an MILP solver to compute schedules.
+This repository consists of a python module STN for the modeling and scheduling of State Task Networks, and several Jupyter notebooks demonstrating their use. This module implements the STN model using the Pyomo package for building optimization models in [Python](http://www.pyomo.org/), and requires an MILP solver to compute schedules.
 
 
 ## Dependencies
 
-* Pyomo
+* [Pyomo](http://www.pyomo.org/)
 * An MILP solver is required for computing solutions to the MILP scheduling problems. The module has been tested with GLPK and Gurobi.
 
+## Related Projects
 
-### References
+* [pySTN](https://github.com/robin-vjc/pySTN) Implementation of a robust scheduling system based on STN (State-Task-Network) models.
+
+
+## References
 
 Floudas, C. A., & Lin, X. (2005). Mixed integer linear programming in process scheduling: Modeling, algorithms, and applications. Annals of Operations Research, 139(1), 131-162.
 
