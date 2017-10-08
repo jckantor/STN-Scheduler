@@ -43,9 +43,11 @@ class STN(object):
         # characterization of units indexed by (task, unit)
         self.Bmax = {}              # max capacity of unit j for task i
         self.Bmin = {}              # minimum capacity of unit j for task i
+        self.cost = {}
+        self.vcost = {}
         
         # dictionaries indexed by (task,task)
-        self.tswitchover = {}        # switch over times required for task1 -> task2
+        self.changeoverTime = {}        # switch over times required for task1 -> task2
     
     # defines states as .state(name, capacity, init)
     def state(self, name, capacity = float('inf'), init = 0, price = 0,):
@@ -63,7 +65,7 @@ class STN(object):
         self.p[name] = 0            # completion time for this task
         self.K[name] = []
         
-    def STarc(self, state, task, rho=1):
+    def stArc(self, state, task, rho=1):
         if state not in self.states:
             self.state(state)
         if task not in self.tasks:
@@ -72,7 +74,7 @@ class STN(object):
         self.rho[(task,state)] = rho
         self.T[state].add(task)
         
-    def TSarc(self, task, state, rho=1, dur=1):
+    def tsArc(self, task, state, rho=1, dur=1):
         if state not in self.states:
             self.state(state)
         if task not in self.tasks:
@@ -83,7 +85,7 @@ class STN(object):
         self.P[(task,state)] = dur
         self.p[task] = max(self.p[task],dur)
         
-    def unit(self, unit, task, Bmin = 0, Bmax = float('inf'), Cost = 0, vCost = 0):
+    def unit(self, unit, task, Bmin = 0, Bmax = float('inf'), cost = 0, vcost = 0):
         if unit not in self.units:
             self.units.add(unit)
             self.I[unit] = []
@@ -93,9 +95,11 @@ class STN(object):
         self.K[task].append(unit)
         self.Bmin[(task,unit)] = Bmin
         self.Bmax[(task,unit)] = Bmax
+        self.cost[(task,unit)] = cost
+        self.vcost[(task,unit)] = vcost
         
-    def switchover(self, task1, task2, dur):
-        self.tswitchover[(task1,task2)] = dur
+    def changeover(self, task1, task2, dur):
+        self.changeoverTime[(task1,task2)] = dur
         
     def pprint(self):
         for task in sorted(self.tasks):
@@ -127,7 +131,7 @@ class STN(object):
             print('        rho_:', self.rho_[(task,state)])
             print('           P:', self.P[(task,state)])
             
-    def buildmodel(self, TIME):
+    def build(self, TIME):
         
         self.TIME = np.array([t for t in TIME])
         self.H = max(self.TIME)
@@ -147,10 +151,13 @@ class STN(object):
         # Q[j,t] inventory of unit j at time t
         m.Q = Var(self.units, self.TIME, domain=NonNegativeReals)
 
-        
+        # objectve
+        m.Cost = Var(domain=NonNegativeReals)
         m.Value = Var(domain=NonNegativeReals)
         m.cons.add(m.Value == sum([self.price[s]*m.S[s,self.H] for s in self.states]))
-        m.Obj = Objective(expr = m.Value, sense = maximize)
+        m.cons.add(m.Cost == sum([self.cost[(i,j)] * m.W[i,j,t] + self.vcost[(i,j)] * m.B[i,j,t]
+                                   for i in self.tasks for j in self.K[i] for t in self.TIME])) 
+        m.Obj = Objective(expr = m.Value - m.Cost, sense = maximize)
         
         # unit constraints
         for j in self.units:
@@ -177,12 +184,12 @@ class STN(object):
                 m.cons.add(m.Q[j,t] == rhs)
                 rhs = m.Q[j,t]
                 
-                            # turnaround constraints
-                for (i1,i2) in self.tswitchover.keys():
+                # switchover time constraints
+                for (i1,i2) in self.changeoverTime.keys():
                     if (i1 in self.I[j]) and (i2 in self.I[j]):
                         for t1 in self.TIME[self.TIME <= (self.H - self.p[i1])]:
                             for t2 in self.TIME[(self.TIME >= t1 + self.p[i1])
-                                            & (self.TIME < t1 + self.p[i1] + self.tswitchover[(i1,i2)])]: 
+                                            & (self.TIME < t1 + self.p[i1] + self.changeoverTime[(i1,i2)])]: 
                                 m.cons.add(m.W[i1,j,t1] + m.W[i2,j,t2] <= 1)
 
                 
