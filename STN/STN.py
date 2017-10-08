@@ -7,7 +7,7 @@ Created on Sat Oct  7 17:42:12 2017
 """
 
 from pyomo.environ import *
-from pprint import pprint
+import matplotlib.pyplot as plt
 import numpy as np
 
 class STN(object):
@@ -25,37 +25,37 @@ class STN(object):
         self.p = {}                 # task durations
         
         # dictionaries indexed by state name
-        self.T = {}                 # sets of tasks fed from each state (task output)
-        self.T_ = {}                # sets of tasks feeding each state (task inputs)
+        self.T = {}                 # tasks fed from each state (task output)
+        self.T_ = {}                # tasks feeding each state (task inputs)
         self.C = {}                 # capacity of each task
         self.init = {}              # initial level
         self.price = {}             # prices of each state
         
         # dictionaries indexed by (task,state) tuples
-        self.rho = {}               # input feed fractions indexed by (task,state)
-        self.rho_ = {}              # output product dispositions by (task,state)
-        self.P = {}                 # time to finish output from task to state (task, state)
+        self.rho = {}               # input feed fractions
+        self.rho_ = {}              # output product dispositions
+        self.P = {}                 # time to finish output from task to state
 
         # dictionary indexed by unit
         self.I = {}                 # sets of tasks performed by each unit
         
         # characterization of units indexed by (task,unit)
-        self.Vmax = {}              # max capacity of unit j performing tank i
-        self.Vmin = {}              # minimum capacity of unit j performing task i
+        self.Vmax = {}              # max capacity of unit j for task i
+        self.Vmin = {}              # minimum capacity of unit j for task i
     
     # defines states as .state(name, capacity, init)
     def state(self, name, capacity=float('inf'), init=0, price=0,):
         self.states.add(name)       # add to the set of states
         self.C[name] = capacity     # state capacity
         self.init[name] = init      # state initial value
-        self.T[name] = set()        # set of tasks which feed this state (inputs)
-        self.T_[name] = set()       # set of tasks fed from this state (outputs)
+        self.T[name] = set()        # tasks which feed this state (inputs)
+        self.T_[name] = set()       # tasks fed from this state (outputs)
         self.price[name] = price    # per unit price of each state
         
     def task(self, name):
         self.tasks.add(name)        # add to set of tasks
-        self.S[name] = []           # set of states which feed this task (inputs)
-        self.S_[name] = []          # set of states fed by this task (outputs)
+        self.S[name] = []           # states which feed this task (inputs)
+        self.S_[name] = []          # states fed by this task (outputs)
         self.p[name] = 0            # completion time for this task
         self.K[name] = []
         
@@ -146,7 +146,7 @@ class STN(object):
         
         model.Value = Var(domain=NonNegativeReals)
         model.cons.add(self.model.Value == 
-                       sum([self.price[s]*model.S[s,self.H] for s in self.states]))
+                sum([self.price[s]*model.S[s,self.H] for s in self.states]))
         model.Obj = Objective(expr = model.Value, sense = maximize)
         
         # unit constraints
