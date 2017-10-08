@@ -17,6 +17,7 @@ class STN(object):
         self.states = set()         # set of state names
         self.tasks = set()          # set of task names
         self.units = set()          # set of unit names
+        self.TIME = []              # time grid
 
         # dictionaries indexed by task name
         self.S = {}                 # sets of states feeding each task (inputs)
@@ -40,11 +41,11 @@ class STN(object):
         self.I = {}                 # sets of tasks performed by each unit
         
         # characterization of units indexed by (task,unit)
-        self.Vmax = {}              # max capacity of unit j for task i
-        self.Vmin = {}              # minimum capacity of unit j for task i
+        self.Bmax = {}              # max capacity of unit j for task i
+        self.Bmin = {}              # minimum capacity of unit j for task i
     
     # defines states as .state(name, capacity, init)
-    def state(self, name, capacity=float('inf'), init=0, price=0,):
+    def state(self, name, capacity = float('inf'), init = 0, price = 0,):
         self.states.add(name)       # add to the set of states
         self.C[name] = capacity     # state capacity
         self.init[name] = init      # state initial value
@@ -59,11 +60,7 @@ class STN(object):
         self.p[name] = 0            # completion time for this task
         self.K[name] = []
         
-    def unit(self, name):
-        self.units.add(name)
-        self.I[name] = []
-        
-    def STarc(self,state,task,rho=1):
+    def STarc(self, state, task, rho=1):
         if state not in self.states:
             self.state(state)
         if task not in self.tasks:
@@ -72,7 +69,7 @@ class STN(object):
         self.rho[(task,state)] = rho
         self.T[state].add(task)
         
-    def TSarc(self,task,state,rho=1,dur=1):
+    def TSarc(self, task, state, rho=1, dur=1):
         if state not in self.states:
             self.state(state)
         if task not in self.tasks:
@@ -83,15 +80,16 @@ class STN(object):
         self.P[(task,state)] = dur
         self.p[task] = max(self.p[task],dur)
         
-    def Unit(self,unit,task,Vmin,Vmax):
+    def unit(self, unit, task, Bmin, Bmax):
         if unit not in self.units:
-            self.unit(unit)
+            self.units.add(unit)
+            self.I[unit] = []
         if task not in self.tasks:
             self.task(task)
         self.I[unit].append(task)
         self.K[task].append(unit)
-        self.Vmin[(task,unit)] = Vmin
-        self.Vmax[(task,unit)] = Vmax
+        self.Bmin[(task,unit)] = Bmin
+        self.Bmax[(task,unit)] = Bmax
         
     def pprint(self):
         for task in sorted(self.tasks):
@@ -123,78 +121,77 @@ class STN(object):
             print('        rho_:', self.rho_[(task,state)])
             print('           P:', self.P[(task,state)])
             
-    def buildmodel(self,tgrid = range(0,11)):
+    def buildmodel(self, TIME):
         
-        self.tgrid = np.array([t for t in tgrid])
-        self.H = max(self.tgrid)
+        self.TIME = np.array([t for t in TIME])
+        self.H = max(self.TIME)
         self.model = ConcreteModel()
-        model = self.model
-        model.cons = ConstraintList()
+        m = self.model
+        m.cons = ConstraintList()
         
         # W[i,j,t] 1 if task i starts in unit j at time t
-        model.W = Var(self.tasks, self.units, self.tgrid, domain=Boolean)
+        m.W = Var(self.tasks, self.units, self.TIME, domain=Boolean)
         
         # B[i,j,t] size of batch assigned to task i in unit j at time t
-        model.B = Var(self.tasks, self.units, self.tgrid, domain=NonNegativeReals)
+        m.B = Var(self.tasks, self.units, self.TIME, domain=NonNegativeReals)
         
         # S[s,t] inventory of state s at time t
-        model.S = Var(self.states, self.tgrid, domain=NonNegativeReals)
+        m.S = Var(self.states, self.TIME, domain=NonNegativeReals)
         
         # Q[j,t] inventory of unit j at time t
-        model.Q = Var(self.units, self.tgrid, domain=NonNegativeReals)
+        m.Q = Var(self.units, self.TIME, domain=NonNegativeReals)
 
         
-        model.Value = Var(domain=NonNegativeReals)
-        model.cons.add(self.model.Value == 
-                sum([self.price[s]*model.S[s,self.H] for s in self.states]))
-        model.Obj = Objective(expr = model.Value, sense = maximize)
+        m.Value = Var(domain=NonNegativeReals)
+        m.cons.add(m.Value == sum([self.price[s]*m.S[s,self.H] for s in self.states]))
+        m.Obj = Objective(expr = m.Value, sense = maximize)
         
         # unit constraints
         for j in self.units:
             rhs = 0
-            for t in self.tgrid:
+            for t in self.TIME:
                 # a unit can only be allocated to one task 
                 lhs = 0
                 for i in self.I[j]:
-                    for tprime in self.tgrid[(self.tgrid <= t) & (self.tgrid >= t-self.p[i]+1)]:
-                        lhs += model.W[i,j,tprime]
-                model.cons.add(lhs <= 1)
+                    for tprime in self.TIME[(self.TIME <= t) & (self.TIME >= t-self.p[i]+1)]:
+                        lhs += m.W[i,j,tprime]
+                m.cons.add(lhs <= 1)
                 
                 # capacity constraints (see Konkili, Sec. 3.1.2)
                 for i in self.I[j]:
-                    model.cons.add(model.W[i,j,t]*self.Vmin[i,j] <= model.B[i,j,t])
-                    model.cons.add(model.B[i,j,t] <= model.W[i,j,t]*self.Vmax[i,j])
+                    m.cons.add(m.W[i,j,t]*self.Bmin[i,j] <= m.B[i,j,t])
+                    m.cons.add(m.B[i,j,t] <= m.W[i,j,t]*self.Bmax[i,j])
                     
                 # unit mass balance
-                rhs += sum([model.B[i,j,t] for i in self.I[j]])
+                rhs += sum([m.B[i,j,t] for i in self.I[j]])
                 for i in self.I[j]:
                     for s in self.S_[i]:
                         if t >= self.P[(i,s)]:
-                            rhs -= self.rho_[(i,s)]*model.B[i,j,max(self.tgrid[self.tgrid <= t-self.P[(i,s)]])]
-                model.cons.add(model.Q[j,t] == rhs)
-                rhs = model.Q[j,t]
+                            rhs -= self.rho_[(i,s)]*m.B[i,j,max(self.TIME[self.TIME <= t-self.P[(i,s)]])]
+                m.cons.add(m.Q[j,t] == rhs)
+                rhs = m.Q[j,t]
                 
                 # terminal condition  
-                model.cons.add(model.Q[j,self.H] == 0)
+                m.cons.add(m.Q[j,self.H] == 0)
 
         # state constraints
         for s in self.states:
             rhs = self.init[s]
-            for t in self.tgrid:
+            for t in self.TIME:
                 # state capacity constraint
-                model.cons.add(model.S[s,t] <= self.C[s])
+                m.cons.add(m.S[s,t] <= self.C[s])
                 # state mass balanace
                 for i in self.T_[s]:
                     for j in self.K[i]:
                         if t >= self.P[(i,s)]: 
-                            rhs += self.rho_[(i,s)]*model.B[i,j,max(self.tgrid[self.tgrid <= t-self.P[(i,s)]])]             
+                            rhs += self.rho_[(i,s)]*m.B[i,j,max(self.TIME[self.TIME <= t-self.P[(i,s)]])]             
                 for i in self.T[s]:
-                    rhs -= self.rho[(i,s)]*sum([model.B[i,j,t] for j in self.K[i]])
-                model.cons.add(model.S[s,t] == rhs)
-                rhs = model.S[s,t] 
+                    rhs -= self.rho[(i,s)]*sum([m.B[i,j,t] for j in self.K[i]])
+                m.cons.add(m.S[s,t] == rhs)
+                rhs = m.S[s,t] 
 
-    def solve(self):
-        self.solver = SolverFactory('glpk')
+    def solve(self, solver='glpk'):
+        self.solver = SolverFactory(solver)
         self.solver.solve(self.model).write()
 
     def gantt(self):
@@ -216,7 +213,7 @@ class STN(object):
                 ticks.append(idx)
                 lbls.append("{0:s} -> {1:s}".format(j,i))
                 plt.plot([0,H],[idx,idx],lw=20,alpha=.3,color='y')
-                for t in self.tgrid:
+                for t in self.TIME:
                     if model.W[i,j,t]() > 0:
                         plt.plot([t,t+p[i]], [idx,idx],'r', lw=20, alpha=0.5, solid_capstyle='butt')
                         plt.plot([t+gap,t+p[i]-gap], [idx,idx],'b', lw=16, solid_capstyle='butt')
