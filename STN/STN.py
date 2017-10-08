@@ -80,7 +80,7 @@ class STN(object):
         self.P[(task,state)] = dur
         self.p[task] = max(self.p[task],dur)
         
-    def unit(self, unit, task, Bmin, Bmax):
+    def unit(self, unit, task, Bmin = 0, Bmax = float('inf'), Cost = 0, vCost = 0):
         if unit not in self.units:
             self.units.add(unit)
             self.I[unit] = []
