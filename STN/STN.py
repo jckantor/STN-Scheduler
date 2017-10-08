@@ -32,17 +32,20 @@ class STN(object):
         self.init = {}              # initial level
         self.price = {}             # prices of each state
         
-        # dictionaries indexed by (task,state) tuples
-        self.rho = {}               # input feed fractions
-        self.rho_ = {}              # output product dispositions
-        self.P = {}                 # time to finish output from task to state
-
         # dictionary indexed by unit
         self.I = {}                 # sets of tasks performed by each unit
         
-        # characterization of units indexed by (task,unit)
+        # dictionaries indexed by (task,state)
+        self.rho = {}               # input feed fractions
+        self.rho_ = {}              # output product dispositions
+        self.P = {}                 # time to finish output from task to state
+        
+        # characterization of units indexed by (task, unit)
         self.Bmax = {}              # max capacity of unit j for task i
         self.Bmin = {}              # minimum capacity of unit j for task i
+        
+        # dictionaries indexed by (task,task)
+        self.tswitchover = {}        # switch over times required for task1 -> task2
     
     # defines states as .state(name, capacity, init)
     def state(self, name, capacity = float('inf'), init = 0, price = 0,):
@@ -90,6 +93,9 @@ class STN(object):
         self.K[task].append(unit)
         self.Bmin[(task,unit)] = Bmin
         self.Bmax[(task,unit)] = Bmax
+        
+    def switchover(self, task1, task2, dur):
+        self.tswitchover[(task1,task2)] = dur
         
     def pprint(self):
         for task in sorted(self.tasks):
@@ -170,6 +176,15 @@ class STN(object):
                             rhs -= self.rho_[(i,s)]*m.B[i,j,max(self.TIME[self.TIME <= t-self.P[(i,s)]])]
                 m.cons.add(m.Q[j,t] == rhs)
                 rhs = m.Q[j,t]
+                
+                            # turnaround constraints
+                for (i1,i2) in self.tswitchover.keys():
+                    if (i1 in self.I[j]) and (i2 in self.I[j]):
+                        for t1 in self.TIME[self.TIME <= (self.H - self.p[i1])]:
+                            for t2 in self.TIME[(self.TIME >= t1 + self.p[i1])
+                                            & (self.TIME < t1 + self.p[i1] + self.tswitchover[(i1,i2)])]: 
+                                m.cons.add(m.W[i1,j,t1] + m.W[i2,j,t2] <= 1)
+
                 
                 # terminal condition  
                 m.cons.add(m.Q[j,self.H] == 0)
