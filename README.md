@@ -5,7 +5,7 @@ The State-Task Network (STN) is a method for modeling and scheduling multipurpos
 This repository consists of a python module STN to assist in the modeling and scheduling of State Task Networks, and Jupyter notebooks demonstrating their use. 
 
 * [Overview of STN Scheduler (to be finished)](notebooks/0_Overview.ipynb)
-* [State Task Network Example of Kondili, et. al, 1993](notebooks/1_Kondili_State_Task_Network.ipynb).
+* [State Task Network Example of Kondili, et. al, 1993](https://github.com/jckantor/STN-Scheduler/blob/master/notebooks/1_Kondili_State_Task_Network.ipynb).
 * [State Task Network Example of Chu, et. al, 2013](notebooks/2_Chu_State_Task_Network.ipynb).
 * [Classroom Case Study of a Multipurpose Batch Fermentation Plant (to be finished)](notebooks/3_Multipurpose_Fermentation_Plant.ipynb).
 
