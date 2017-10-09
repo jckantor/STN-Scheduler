@@ -56,5 +56,4 @@ stn.unit('Still',     'Separation', Bmin = 0, Bmax = 200)
 H = 10
 stn.build(range(0,H+1))
 stn.solve('glpk')
-stn.gantt()
-stn.trace()
+stn.sim()

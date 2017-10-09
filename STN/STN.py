@@ -261,7 +261,21 @@ class STN(object):
         plt.xlim(0,self.H)
         plt.ylim(-nbars-0.5,0)
         plt.gca().set_yticks(ticks)
-        plt.gca().set_yticklabels(lbls);  
+        plt.gca().set_yticklabels(lbls);
+        
+    def sim(self):
+        # build a dataframe with columns t, j, i, batchsize, time2go
+        
+        df = []
+        
+        TIME = self.TIME
+        for t in TIME:
+            for j in self.units:
+                for i in self.I[j]:
+                    df.append([t, i, j, self.model.W[i,j,t](), self.p[i]])
+            
+        for li in df:
+            print(li)
         
     def trace(self):
         # abbreviations
