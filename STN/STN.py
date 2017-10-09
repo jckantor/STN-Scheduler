@@ -228,7 +228,6 @@ class STN(object):
         lbls = []
         ticks = []
         
-        
         # create a list of units sorted by time of first assignment
         jstart = {j:H+1 for j in self.units}
         for j in self.units:
@@ -262,12 +261,13 @@ class STN(object):
         plt.xlim(0,self.H)
         plt.ylim(-nbars-0.5,0)
         plt.gca().set_yticks(ticks)
-        plt.gca().set_yticklabels(lbls);
+        plt.gca().set_yticklabels(lbls);  
         
     def trace(self):
         # abbreviations
         model = self.model
         TIME = self.TIME
+        dT = np.mean(np.diff(TIME))
         
         print("\nStarting Conditions")
         print("\n    Initial State Inventories are:")            
@@ -275,7 +275,9 @@ class STN(object):
             print("        {0:10s}  {1:6.1f} kg".format(s,self.init[s]))
         
         # for tracking unit assignments
-        uassign = {j:{'assignment':'None', 't':0} for j in self.units}
+        # t2go[j]['assignment'] contains the task to which unit j is currently assigned
+        # t2go[j]['t'] is the time to go on equipment j
+        time2go = {j:{'assignment':'None', 't':0} for j in self.units}
         
         for t in TIME:
             print("\nTime =",t,"hr")
@@ -285,7 +287,7 @@ class STN(object):
             
             # first unload units 
             for j in self.units:
-                uassign[j]['t'] += 1
+                time2go[j]['t'] -= dT
                 fmt = 'Transfer {0:.2f} kg from {1:s} to {2:s}'
                 for i in self.I[j]:  
                     for s in self.S_[i]:
@@ -302,8 +304,8 @@ class STN(object):
                     if t-self.p[i] >= 0:
                         if model.W[i,j,max(TIME[TIME <= t-self.p[i]])]() > 0:
                             strList.append(fmt.format(j,i))
-                            uassign[j]['assignment'] = 'None'
-                            uassign[j]['t'] = 0
+                            time2go[j]['assignment'] = 'None'
+                            time2go[j]['t'] = 0
                             
                 # assign units to tasks
                 fmt = 'Assign {0:s} to {1:s} for {2:.2f} kg batch for {3:.1f} hours'
@@ -311,8 +313,8 @@ class STN(object):
                     amt = model.B[i,j,t]()
                     if amt > 0:
                         strList.append(fmt.format(j,i,amt,self.p[i]))
-                        uassign[j]['assignment'] = i
-                        uassign[j]['t'] = 1
+                        time2go[j]['assignment'] = i
+                        time2go[j]['t'] = self.p[i]
                         
                 # transfer from states to tasks/units
                 fmt = 'Transfer {0:.2f} from {1:s} to {2:s}'
@@ -334,11 +336,11 @@ class STN(object):
                 print("        {0:10s}  {1:6.1f} kg".format(s,model.S[s,t]()))
             
             print('\n    Unit Assignments are now:')
-            fmt = '        {0:s} on {1:s} with {2:.2f} kg batch for hour {3:d} of {4:d}'
+            fmt = '        {0:s}: {1:s}, {2:.2f} kg, {3:.1f} hours to go.'
             for j in self.units:
-                if uassign[j]['assignment'] != 'None':
-                    i = uassign[j]['assignment']
-                    print(fmt.format(j, i, model.Q[j,t](), uassign[j]['t'], self.p[i]))
+                if time2go[j]['assignment'] != 'None':
+                    print(fmt.format(j, time2go[j]['assignment'], 
+                                     model.Q[j,t](), time2go[j]['t']))
                 else:
                     print('        {0:s} is unassigned'.format(j))
                     
