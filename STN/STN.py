@@ -60,17 +60,17 @@ class STN(object):
         
     def task(self, name):
         self.tasks.add(name)        # add to set of tasks
-        self.S[name] = []           # states which feed this task (inputs)
-        self.S_[name] = []          # states fed by this task (outputs)
+        self.S[name] = set()        # states which feed this task (inputs)
+        self.S_[name] = set()       # states fed by this task (outputs)
         self.p[name] = 0            # completion time for this task
-        self.K[name] = []
+        self.K[name] = set()
         
     def stArc(self, state, task, rho=1):
         if state not in self.states:
             self.state(state)
         if task not in self.tasks:
             self.task(task)
-        self.S[task].append(state)  
+        self.S[task].add(state)  
         self.rho[(task,state)] = rho
         self.T[state].add(task)
         
@@ -79,7 +79,7 @@ class STN(object):
             self.state(state)
         if task not in self.tasks:
             self.task(task)
-        self.S_[task].append(state)
+        self.S_[task].add(state)
         self.T_[state].add(task)
         self.rho_[(task,state)] = rho
         self.P[(task,state)] = dur
@@ -88,11 +88,11 @@ class STN(object):
     def unit(self, unit, task, Bmin = 0, Bmax = float('inf'), cost = 0, vcost = 0):
         if unit not in self.units:
             self.units.add(unit)
-            self.I[unit] = []
+            self.I[unit] = set()
         if task not in self.tasks:
             self.task(task)
-        self.I[unit].append(task)
-        self.K[task].append(unit)
+        self.I[unit].add(task)
+        self.K[task].add(unit)
         self.Bmin[(task,unit)] = Bmin
         self.Bmax[(task,unit)] = Bmax
         self.cost[(task,unit)] = cost
@@ -263,4 +263,83 @@ class STN(object):
         plt.ylim(-nbars-0.5,0)
         plt.gca().set_yticks(ticks)
         plt.gca().set_yticklabels(lbls);
+        
+    def trace(self):
+        # abbreviations
+        model = self.model
+        TIME = self.TIME
+        
+        print("\nStarting Conditions")
+        print("\n    Initial State Inventories are:")            
+        for s in self.states:
+            print("        {0:10s}  {1:6.1f} kg".format(s,self.init[s]))
+        
+        # for tracking unit assignments
+        uassign = {j:{'assignment':'None', 't':0} for j in self.units}
+        
+        for t in TIME:
+            print("\nTime =",t,"hr")
+            
+            # create list of instructions
+            strList = []
+            
+            # first unload units 
+            for j in self.units:
+                uassign[j]['t'] += 1
+                fmt = 'Transfer {0:.2f} kg from {1:s} to {2:s}'
+                for i in self.I[j]:  
+                    for s in self.S_[i]:
+                        ts = t-self.P[(i,s)]
+                        if ts >= 0:
+                            amt = self.rho_[(i,s)] * model.B[i,j, max(TIME[TIME <= ts])]()
+                            if amt > 0:
+                                strList.append(fmt.format(amt,j,s))
+                                
+            for j in self.units:
+                # release units from tasks
+                fmt = 'Release {0:s} from {1:s}'
+                for i in self.I[j]:
+                    if t-self.p[i] >= 0:
+                        if model.W[i,j,max(TIME[TIME <= t-self.p[i]])]() > 0:
+                            strList.append(fmt.format(j,i))
+                            uassign[j]['assignment'] = 'None'
+                            uassign[j]['t'] = 0
+                            
+                # assign units to tasks
+                fmt = 'Assign {0:s} to {1:s} for {2:.2f} kg batch for {3:.1f} hours'
+                for i in self.I[j]:
+                    amt = model.B[i,j,t]()
+                    if amt > 0:
+                        strList.append(fmt.format(j,i,amt,self.p[i]))
+                        uassign[j]['assignment'] = i
+                        uassign[j]['t'] = 1
+                        
+                # transfer from states to tasks/units
+                fmt = 'Transfer {0:.2f} from {1:s} to {2:s}'
+                for i in self.I[j]:
+                    for s in self.S[i]:
+                        amt = self.rho[(i,s)] * model.B[i,j,t]()
+                        if amt > 0:
+                            strList.append(fmt.format(amt, s, j))
+
+            if len(strList) > 0:
+                print()
+                idx = 0
+                for str in strList:
+                    idx += 1
+                    print('   {0:2d}. {1:s}'.format(idx,str))
+                    
+            print("\n    State Inventories are now:")            
+            for s in self.states:
+                print("        {0:10s}  {1:6.1f} kg".format(s,model.S[s,t]()))
+            
+            print('\n    Unit Assignments are now:')
+            fmt = '        {0:s} on {1:s} with {2:.2f} kg batch for hour {3:d} of {4:d}'
+            for j in self.units:
+                if uassign[j]['assignment'] != 'None':
+                    i = uassign[j]['assignment']
+                    print(fmt.format(j, i, model.Q[j,t](), uassign[j]['t'], self.p[i]))
+                else:
+                    print('        {0:s} is unassigned'.format(j))
+                    
         
