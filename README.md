@@ -33,7 +33,7 @@ Harjunkoski, I., Maravelias, C. T., Bongers, P., Castro, P. M., Engell, S., Gros
 
 Kondili, E., Pantelides, C. C., & Sargent, R. W. H. (1993). A general algorithm for short-term scheduling of batch operations—I. MILP formulation. Computers & Chemical Engineering, 17(2), 211-227.
 
-Maravelias, C. T., and Grossmann 2003). New General Continuous-Time State−Task Network Formulation for Short-Term Scheduling of Multipurpose Batch Plants. Industrial & Engineering Chemistry Research, 42 (13), 3056-3074.
+Maravelias, C. T., and Grossmann (2003). New General Continuous-Time State−Task Network Formulation for Short-Term Scheduling of Multipurpose Batch Plants. Industrial & Engineering Chemistry Research, 42 (13), 3056-3074.
 
 Méndez, C. A., Cerdá, J., Grossmann, I. E., Harjunkoski, I., & Fahl, M. (2006). State-of-the-art review of optimization methods for short-term scheduling of batch processes. Computers & Chemical Engineering, 30(6), 913-946.
 
