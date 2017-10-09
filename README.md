@@ -7,7 +7,7 @@ This repository consists of a python module STN to assist in the modeling and sc
 * [Overview of STN Scheduler (to be finished)](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/0_Overview.ipynb)
 * [State Task Network Example of Kondili, et. al, 1993](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/1_Kondili_State_Task_Network.ipynb).
 * [State Task Network Example of Chu, et. al, 2013](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/2_Chu_State_Task_Network.ipynb).
-* [CExample from Maravelias and Grossmann, 2003](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/4_Maravelias_Grossmann_Example_A.ipynb).
+* [Example from Maravelias and Grossmann, 2003](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/4_Maravelias_Grossmann_Example_A.ipynb).
 * [Classroom Case Study of a Multipurpose Batch Fermentation Plant (to be finished)](http://nbviewer.jupyter.org/github/jckantor/STN-Scheduler/blob/master/notebooks/3_Multipurpose_Fermentation_Plant.ipynb).
 
 This module implements the STN model using the Pyomo package for building optimization models in [Python](http://www.pyomo.org/), and requires an MILP solver to compute schedules.
