@@ -222,26 +222,45 @@ class STN(object):
         H = self.H
         I = self.I
         p = self.p
-        plt.figure(figsize=(12,6))
 
         gap = H/400
         idx = 1
         lbls = []
         ticks = []
-        for j in sorted(self.units):
-            idx -= 1
+        
+        
+        # create a list of units sorted by time of first assignment
+        jstart = {j:H+1 for j in self.units}
+        for j in self.units:
+            for i in I[j]:
+                for t in self.TIME:
+                    if self.model.W[i,j,t]() > 0:
+                        jstart[j] = min(jstart[j],t)
+        jsorted = [j for (j,t) in sorted(jstart.items(), key=lambda x: x[1])]
+
+        # number of horizontal bars to draw
+        nbars = -1
+        for j in jsorted:
+            for i in sorted(I[j]):
+                nbars += 1
+            nbars += 0.5
+        plt.figure(figsize=(12,(nbars+1)/2))
+        
+        for j in jsorted:
+            idx -= 0.5
             for i in sorted(I[j]):
                 idx -= 1
                 ticks.append(idx)
                 lbls.append("{0:s} -> {1:s}".format(j,i))
-                plt.plot([0,H],[idx,idx],lw=20,alpha=.3,color='y')
+                plt.plot([0,H],[idx,idx],lw=24,alpha=.3,color='y')
                 for t in self.TIME:
                     if model.W[i,j,t]() > 0:
-                        plt.plot([t,t+p[i]], [idx,idx],'r', lw=20, alpha=0.5, solid_capstyle='butt')
-                        plt.plot([t+gap,t+p[i]-gap], [idx,idx],'b', lw=16, solid_capstyle='butt')
+                        plt.plot([t,t+p[i]], [idx,idx],'k', lw=24, alpha=0.5, solid_capstyle='butt')
+                        plt.plot([t+gap,t+p[i]-gap], [idx,idx],'b', lw=20, solid_capstyle='butt')
                         txt = "{0:.2f}".format(model.B[i,j,t]())
                         plt.text(t+p[i]/2, idx, txt, color='white', weight='bold', ha='center', va='center')
         plt.xlim(0,self.H)
+        plt.ylim(-nbars-0.5,0)
         plt.gca().set_yticks(ticks)
         plt.gca().set_yticklabels(lbls);
         
