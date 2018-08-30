@@ -1,16 +1,14 @@
-import numpy as np
-
-
 class State():
 
-    def __init__(self, name, initial=0, price=0, capacity=np.Inf):
+    def __init__(self, name, initial=0, capacity=float('inf'), price=0):
         self.name = name
         self.initial = initial
-        self.price = price
         self.capacity = capacity
+        self.price = price
 
-#    def __repr__(self):
-#        return "<State>" + self.name
+    def __repr__(self):
+        return 'State("{0}", {1}, {2}, {3})'.format(
+            self.name, self.initial, self.capacity, self.price)
 
 
 class Task():
@@ -19,7 +17,57 @@ class Task():
         self.name = name
         self.feeds = dict()
         self.products = dict()
-        self.units = dict()
+
+    def __repr__(self):
+        return self.name
+
+
+class Flow():
+
+    def __init__(self, state, task, rho=1, dur=0):
+        self.state = state
+        self.task = task
+        self.rho = rho
+        self.dur = dur
+
+    def __repr__(self):
+        return 'Flow({0}, {1}, {2}, {3}'.format(
+            self.state, self.task, self.rho, self.dur)
+
+
+class Unit():
+
+    def __init__(self, name, Bmin=0, Bmax=float('inf'), tclean=0, fcost=0, vcost=0):
+        self.name = name
+        self.tasks = []
+        self.Bmin = Bmin
+        self.Bmax = Bmax
+        self.tclean = tclean
+        self.fcost = fcost
+        self.vcost = vcost
+
+    def __repr__(self):
+        return self.name
+
+
+class STN:
+
+    def __init__(self):
+        self._states = set()
+        self._tasks = set()
+        self._inflows = set()
+        self._outflows = set()
+        self._units = set()
+
+    def __setattr__(self, name, value):
+        if type(value) == State:
+            self._states.add(name)
+        elif type(value) == Task:
+            self._tasks.add(name)
+        elif type(value) == Unit:
+            self._units.add(name)
+        self.__dict__[name] = value
+
 
 #    def __repr__(self):
 #        print(self.feeds)
@@ -49,7 +97,7 @@ class Task():
             'vcost': vcost}
 """
 
-
+"""
 class Unit():
 
     def __init__(self, name):
@@ -59,7 +107,7 @@ class Unit():
     def __repr__(self):
         return "<Unit>" + self.name
 
-"""
+
     def task(self, name, Bmin=0, Bmax=np.Inf, tclean=0, cost=0, vcost=0):
         self.tasks[name] = {
             'Bmin': Bmin,
@@ -76,21 +124,7 @@ class Unit():
 """
 
 
-class STN:
 
-    def __init__(self):
-        self._states = set()
-        self._tasks = set()
-        self._units = set()
-
-    def __setattr__(self, name, value):
-        if type(value) == State:
-            self._states.add(name)
-        elif type(value) == Task:
-            self._tasks.add(name)
-        elif type(value) == Unit:
-            self._units.add(name)
-        self.__dict__[name] = value
 
 """
     def __repr__(self):

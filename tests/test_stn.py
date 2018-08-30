@@ -1,7 +1,6 @@
 import pytest
-import numpy as np
 
-from stn import State, Task, Unit, STN
+from stn import State, Task, Flow, Unit, STN
 
 def test_state_constructor():
     with pytest.raises(Exception):
@@ -13,12 +12,11 @@ def test_state_constructor():
     assert(hasattr(s, 'initial'))
     assert(s.initial == 0)
 
+    assert(hasattr(s, 'capacity'))
+    assert(s.capacity == float('inf'))
+
     assert(hasattr(s, 'price'))
     assert(s.price == 0)
-
-    assert(hasattr(s, 'capacity'))
-    assert(s.capacity == np.Inf)
-
 
 def test_task_constructor():
     with pytest.raises(Exception):
@@ -33,8 +31,18 @@ def test_task_constructor():
     assert(hasattr(t, 'products'))
     assert(t.products == dict())
 
-    assert(hasattr(t, 'units'))
-    assert(t.units == dict())
+s = State('S')
+t = Task('T')
+
+def test_flow_constructor():
+    with pytest.raises(Exception):
+        f = Flow()
+        f = Flow('F')
+    f = Flow('F', s, t)
+    assert(hasattr(f, 'state'))
+    assert(hasattr(f, 'task'))
+    assert(hasattr(f, 'rho'))
+    assert(hasattr(f, 'dur'))
 
 
 def test_unit_constructor():
@@ -43,9 +51,6 @@ def test_unit_constructor():
     u = Unit('U')
     assert(hasattr(u, 'name'))
     assert(u.name == 'U')
-
-    assert(hasattr(u, 'tasks'))
-    assert(u.tasks == dict())
 
 
 def test_stn_constructor():
