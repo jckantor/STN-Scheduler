@@ -1,0 +1,7 @@
+[
+  "tests/test_stn.py::test_state_constructor",
+  "tests/test_stn.py::test_task_constructor",
+  "tests/test_stn.py::test_flow_constructor",
+  "tests/test_stn.py::test_unit_constructor",
+  "tests/test_stn.py::test_stn_constructor"
+]
